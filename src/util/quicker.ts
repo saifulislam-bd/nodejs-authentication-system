@@ -1,5 +1,14 @@
+ 
+ 
+ 
+ 
 import os from 'os'
 import config from '../config/config'
+import { parsePhoneNumber } from 'libphonenumber-js'
+import { getTimezonesForCountry } from 'countries-and-timezones'
+import bcrypt from 'bcrypt'
+import { v4 as uuid } from 'uuid';
+import { randomInt } from 'crypto'
 
 export default {
     getSystemHealth: () => {
@@ -18,5 +27,43 @@ export default {
                 heapUsed: `${(process.memoryUsage().heapUsed / 1024 / 1024).toFixed(2)} MB`
             }
         }
-    }
+    },
+    parsePhoneNumber:(phoneNumber: string)=>{
+        try {
+        const parsedPhoneNumber = parsePhoneNumber(phoneNumber);
+        if(parsedPhoneNumber){
+            return {
+                countryCode: parsedPhoneNumber.countryCallingCode,
+                isoCode: parsedPhoneNumber.country || null,
+                internationalNumber: parsedPhoneNumber.formatInternational(),
+            }
+        }
+        return {
+            countryCode: null,
+            isoCode:  null,
+            internationalNumber: null,
+        }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (error) {
+            return {
+                countryCode: null,
+                isoCode:  null,
+                internationalNumber: null,
+            }
+        }
+    },
+    countryTimezone: (isoCode: string) => {
+     return getTimezonesForCountry(isoCode)
+    },
+    hashPassword:(password: string)=>{
+        return bcrypt.hash(password, 10)
+    },
+    
+    generateRandomId: () => uuid(),
+    generateOtp: (length: number)=>{
+        const min = Math.pow(10, length - 1);
+        const max = Math.pow(10, length) - 1;
+
+        return randomInt(min, max).toString()
+    },
 }

@@ -1,5 +1,7 @@
 import mongoose from 'mongoose'
 import config from '../config/config'
+import userModel from '../model/userModel'
+import { IUser } from '../types/userType'
 
 export default {
     connect: async () => {
@@ -9,5 +11,12 @@ export default {
         } catch (err) {
             throw err
         }
+    },
+    findUserByEmail: (email: string)=>{
+        return userModel.findOne({email})
+    },
+    registerUser:(payload:IUser)=>{
+        return userModel.create(payload)
     }
 }
+
