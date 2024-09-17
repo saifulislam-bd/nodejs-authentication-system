@@ -3,8 +3,8 @@ import httpResponse from '../util/httpResponse'
 import responseMessage from '../constant/responseMessage'
 import httpError from '../util/httpError'
 import quicker from '../util/quicker'
-import { IRegisterRequestBody, IUser } from '../types/userType'
-import { validateJoiSchema, validateRegisterBody } from '../service/validationService'
+import { ILoginRequestBody, IRegisterRequestBody, IUser } from '../types/userType'
+import { validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService'
 import databaseService from '../service/databaseService'
 import { EUserRole } from '../constant/userConstant'
 import config from '../config/config'
@@ -17,6 +17,9 @@ dayjs.extend(utc)
 
 interface IRegisterRequest extends Request {
     body: IRegisterRequestBody
+}
+interface ILoginRequest extends Request {
+    body: ILoginRequestBody
 }
 interface IConfirmRequest extends Request {
     params:{token: string},
@@ -166,6 +169,36 @@ export default {
                     meta: err
                 })});
         httpResponse(req, res, 200, responseMessage.SUCCESS)
+        } catch (err) {
+            httpError(next, err, req, 500)
+        }
+    },
+    login: async(req: Request, res: Response, next: NextFunction) => {
+        try {
+            const {body} = req as ILoginRequest;
+        // TODO: 
+        // * Validate and parse body
+        const {error, value} = validateJoiSchema<ILoginRequestBody>(validateLoginBody, body);
+
+        if(error) {
+                return httpError(next, error, req, 422)
+            }
+            const {email} = value;
+        // * Find user
+            const user = await databaseService.findUserByEmail(email);
+
+            if(!user){
+                return httpError(next, new Error(responseMessage.NOT_FOUND('user')), req, 404)
+            }
+        // * Validate password
+        // * Access token and refresh token generate
+        // * Lat login information
+        // * Refresh token store
+        // * Cookie send
+
+
+
+            httpResponse(req, res, 200, responseMessage.SUCCESS)
         } catch (err) {
             httpError(next, err, req, 500)
         }

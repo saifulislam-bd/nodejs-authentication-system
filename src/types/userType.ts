@@ -7,6 +7,10 @@ export interface IRegisterRequestBody {
     password: string
     consent: boolean
 }
+export interface ILoginRequestBody {
+    email: string
+    password: string
+}
 
 export interface IUser {
   name: string
