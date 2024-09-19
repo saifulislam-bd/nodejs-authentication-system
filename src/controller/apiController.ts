@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { NextFunction, Request, Response } from 'express'
 import httpResponse from '../util/httpResponse'
 import responseMessage from '../constant/responseMessage'
@@ -12,6 +13,8 @@ import emailService from '../service/emailService'
 import logger from '../util/logger'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
+import { EApplicationEnvironment } from '../constant/application'
+
 
 dayjs.extend(utc)
 
@@ -124,7 +127,7 @@ export default {
 
             emailService.sendEmail(to,subject,text).catch((err)=>{
                 logger.error('EMAIL_SERVICE',{
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                     
                     meta: err
                 })
             })
@@ -165,7 +168,7 @@ export default {
 
             emailService.sendEmail(to,subject,text).catch((err)=>{
                 logger.error('EMAIL_SERVICE',{
-                    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+                     
                     meta: err
                 })});
         httpResponse(req, res, 200, responseMessage.SUCCESS)
@@ -183,21 +186,66 @@ export default {
         if(error) {
                 return httpError(next, error, req, 422)
             }
-            const {email} = value;
+            const {email, password} = value;
         // * Find user
-            const user = await databaseService.findUserByEmail(email);
+            const user = await databaseService.findUserByEmail(email, '+password');
 
             if(!user){
                 return httpError(next, new Error(responseMessage.NOT_FOUND('user')), req, 404)
             }
         // * Validate password
+     const isValidPassword = await quicker.comparePassword(password, user.password);
+
+     if(!isValidPassword){
+        return httpError(next, new Error(responseMessage.INVALID_EMAIL_OR_PASSWORD), req, 400)
+     }
         // * Access token and refresh token generate
-        // * Lat login information
+    
+        const accessToken = quicker.generateToken(
+            {
+                userId: user.id 
+            },
+            config.ACCESS_TOKEN.SECRET as string,
+            config.ACCESS_TOKEN.EXPIRY
+        );
+        
+        const refreshToken = quicker.generateToken(
+            {
+                userId: user.id 
+            },
+            config.REFRESH_TOKEN.SECRET as string,
+            config.REFRESH_TOKEN.EXPIRY);
+
+        // * Last login information
+        user.lastLoginAt = dayjs().utc().toDate();
+        await user.save();
+
         // * Refresh token store
+
         // * Cookie send
-
-
-
+        let DOMAIN = ''
+        try {
+         const url = new URL(config.SERVER_URL as string)
+         DOMAIN = url.hostname
+        } catch (error) {
+            throw error
+        }
+        res.cookie('accessToken', accessToken, {
+            path:'/api/v1',
+            domain: DOMAIN,
+            sameSite: 'strict',
+            maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+            httpOnly: true,
+            secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+        }).cookie('refreshToken', refreshToken, {
+            path:'/api/v1',
+            domain: DOMAIN,
+            sameSite: 'strict',
+            maxAge: 1000 * config.REFRESH_TOKEN.EXPIRY,
+            httpOnly: true,
+            secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+        })
+        
             httpResponse(req, res, 200, responseMessage.SUCCESS)
         } catch (err) {
             httpError(next, err, req, 500)

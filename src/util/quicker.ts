@@ -1,12 +1,9 @@
- 
- 
- 
- 
 import os from 'os'
 import config from '../config/config'
 import { parsePhoneNumber } from 'libphonenumber-js'
 import { getTimezonesForCountry } from 'countries-and-timezones'
 import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 import { v4 as uuid } from 'uuid';
 import { randomInt } from 'crypto'
 
@@ -59,11 +56,20 @@ export default {
         return bcrypt.hash(password, 10)
     },
     
+    comparePassword:(newPassword: string, encryptedPassword:string)=>{
+        return bcrypt.compare(newPassword, encryptedPassword)
+    },
+    
     generateRandomId: () => uuid(),
     generateOtp: (length: number)=>{
         const min = Math.pow(10, length - 1);
         const max = Math.pow(10, length) - 1;
 
         return randomInt(min, max).toString()
+    },
+    generateToken: (payload: object, secret: string, expiry: number) => {
+        jwt.sign(payload, secret, {
+            expiresIn: expiry
+        })
     },
 }

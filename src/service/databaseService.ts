@@ -12,8 +12,8 @@ export default {
             throw err
         }
     },
-    findUserByEmail: (email: string)=>{
-        return userModel.findOne({email})
+    findUserByEmail: (email: string, select:string='')=>{
+        return userModel.findOne({email}).select(select)
     },
     registerUser:(payload:IUser)=>{
         return userModel.create(payload)
