@@ -4,7 +4,7 @@ import httpResponse from '../util/httpResponse'
 import responseMessage from '../constant/responseMessage'
 import httpError from '../util/httpError'
 import quicker from '../util/quicker'
-import { ILoginRequestBody, IRegisterRequestBody, IUser } from '../types/userType'
+import { ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType'
 import { validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService'
 import databaseService from '../service/databaseService'
 import { EUserRole } from '../constant/userConstant'
@@ -207,6 +207,7 @@ export default {
             },
             config.ACCESS_TOKEN.SECRET as string,
             config.ACCESS_TOKEN.EXPIRY
+            
         );
         
         const refreshToken = quicker.generateToken(
@@ -221,6 +222,10 @@ export default {
         await user.save();
 
         // * Refresh token store
+        const refreshTokenPayload: IRefreshToken = {
+            token:refreshToken
+        }
+        await databaseService.createRefreshToken(refreshTokenPayload)
 
         // * Cookie send
         let DOMAIN = ''

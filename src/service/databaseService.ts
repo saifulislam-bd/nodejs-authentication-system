@@ -1,7 +1,8 @@
 import mongoose from 'mongoose'
 import config from '../config/config'
 import userModel from '../model/userModel'
-import { IUser } from '../types/userType'
+import { IRefreshToken, IUser } from '../types/userType'
+import refreshTokenModel from '../model/refreshTokenModel'
 
 export default {
     connect: async () => {
@@ -23,6 +24,8 @@ export default {
             'accountConfirmation.token': token,
             'accountConfirmation.code': code
         })
-    }
+    },
+    createRefreshToken:(payload:IRefreshToken)=>{
+        return refreshTokenModel.create(payload)
 }
-
+}

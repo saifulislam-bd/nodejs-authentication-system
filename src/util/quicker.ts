@@ -68,7 +68,7 @@ export default {
         return randomInt(min, max).toString()
     },
     generateToken: (payload: object, secret: string, expiry: number) => {
-        jwt.sign(payload, secret, {
+       return jwt.sign(payload, secret, {
             expiresIn: expiry
         })
     },
