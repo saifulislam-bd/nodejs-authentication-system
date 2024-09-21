@@ -10,4 +10,5 @@ export default {
     INVALID_ACCOUNT_CONFIRMATION_OR_CODE:`Invalid account confirmation or code`,
     ACCOUNT_ALREADY_CONFIRMED:`Account already confirmed`,
     INVALID_EMAIL_OR_PASSWORD:`Invalid Email or Password`,
+    UNAUTHORIZED:`You are not authorized`,
 }

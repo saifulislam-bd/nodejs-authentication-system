@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+ 
 import { NextFunction, Request, Response } from 'express'
 import httpResponse from '../util/httpResponse'
 import responseMessage from '../constant/responseMessage'
@@ -27,6 +27,9 @@ interface ILoginRequest extends Request {
 interface IConfirmRequest extends Request {
     params:{token: string},
     query:{code: string}
+}
+interface ISelfIdentificationRequest extends Request {
+    authenticatedUser: IUser
 }
 
 
@@ -252,6 +255,14 @@ export default {
         })
         
             httpResponse(req, res, 200, responseMessage.SUCCESS)
+        } catch (err) {
+            httpError(next, err, req, 500)
+        }
+    },
+    selfIdentification:  (req: Request, res: Response, next: NextFunction) => {
+        try {
+           const {authenticatedUser} = req as ISelfIdentificationRequest; 
+            httpResponse(req, res, 200, responseMessage.SUCCESS, authenticatedUser)
         } catch (err) {
             httpError(next, err, req, 500)
         }

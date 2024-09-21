@@ -72,4 +72,7 @@ export default {
             expiresIn: expiry
         })
     },
+    verifyToken: (token: string, secret: string) => {
+        return jwt.verify(token, secret)
+    }
 }
