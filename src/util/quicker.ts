@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken'
 import { v4 as uuid } from 'uuid';
 import { randomInt } from 'crypto'
 
+
 export default {
     getSystemHealth: () => {
         return {
@@ -74,5 +75,13 @@ export default {
     },
     verifyToken: (token: string, secret: string) => {
         return jwt.verify(token, secret)
+    },
+    getDomainFromUrl: (url: string) =>{
+        try {
+            const parsedUrl = new URL(url)
+            return parsedUrl.hostname
+           } catch (error) {
+               throw error
+           }
     }
 }

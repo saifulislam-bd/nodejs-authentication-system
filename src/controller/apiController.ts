@@ -231,13 +231,8 @@ export default {
         await databaseService.createRefreshToken(refreshTokenPayload)
 
         // * Cookie send
-        let DOMAIN = ''
-        try {
-         const url = new URL(config.SERVER_URL as string)
-         DOMAIN = url.hostname
-        } catch (error) {
-            throw error
-        }
+       const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL as string);
+
         res.cookie('accessToken', accessToken, {
             path:'/api/v1',
             domain: DOMAIN,
@@ -263,6 +258,39 @@ export default {
         try {
            const {authenticatedUser} = req as ISelfIdentificationRequest; 
             httpResponse(req, res, 200, responseMessage.SUCCESS, authenticatedUser)
+        } catch (err) {
+            httpError(next, err, req, 500)
+        }
+    },
+    logout: async(req: Request, res: Response, next: NextFunction) => {
+        try {
+            const {cookies} = req;
+            const {refreshToken} = cookies as {
+                refreshToken: string | undefined
+            };
+            if(refreshToken){
+             // * db-> delete the refresh token   
+              await databaseService.deleteRefreshToken(refreshToken)
+            }
+            const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL as string);
+            // * clear cookies 
+            res.clearCookie('accessToken',{
+                path:'/api/v1',
+                domain: DOMAIN,
+                sameSite: 'strict',
+                maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                httpOnly: true,
+                secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+            })
+            res.clearCookie('refreshToken',{
+                path:'/api/v1',
+                domain: DOMAIN,
+                sameSite: 'strict',
+                maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                httpOnly: true,
+                secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+            })
+            httpResponse(req, res, 200, responseMessage.SUCCESS)
         } catch (err) {
             httpError(next, err, req, 500)
         }

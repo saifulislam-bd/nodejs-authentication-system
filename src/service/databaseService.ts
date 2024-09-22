@@ -30,5 +30,9 @@ export default {
     },
     createRefreshToken:(payload:IRefreshToken)=>{
         return refreshTokenModel.create(payload)
-}
+    },
+    deleteRefreshToken:(token: string)=>{
+        return refreshTokenModel.deleteOne({token})
+    }
+
 }
