@@ -33,6 +33,9 @@ export default {
     },
     deleteRefreshToken:(token: string)=>{
         return refreshTokenModel.deleteOne({token})
+    },
+    getRefreshToken:(token: string)=>{
+        return refreshTokenModel.findOne({token})
     }
 
 }

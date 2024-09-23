@@ -4,7 +4,7 @@ import httpResponse from '../util/httpResponse'
 import responseMessage from '../constant/responseMessage'
 import httpError from '../util/httpError'
 import quicker from '../util/quicker'
-import { ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType'
+import { IDecryptedJwt, ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType'
 import { validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService'
 import databaseService from '../service/databaseService'
 import { EUserRole } from '../constant/userConstant'
@@ -14,6 +14,7 @@ import logger from '../util/logger'
 import dayjs from 'dayjs'
 import utc from 'dayjs/plugin/utc'
 import { EApplicationEnvironment } from '../constant/application'
+
 
 
 dayjs.extend(utc)
@@ -249,7 +250,7 @@ export default {
             secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
         })
         
-            httpResponse(req, res, 200, responseMessage.SUCCESS)
+         return httpResponse(req, res, 200, responseMessage.SUCCESS,{accessToken, refreshToken})
         } catch (err) {
             httpError(next, err, req, 500)
         }
@@ -291,6 +292,51 @@ export default {
                 secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
             })
             httpResponse(req, res, 200, responseMessage.SUCCESS)
+        } catch (err) {
+            httpError(next, err, req, 500)
+        }
+    },
+    refreshToken: async(req: Request, res: Response, next: NextFunction) => {
+        try {
+            const {cookies} = req;
+            const {refreshToken, accessToken} = cookies as {
+                refreshToken: string | undefined,
+                accessToken: string | undefined,
+            };
+            if(accessToken){
+                return httpResponse(req, res, 200, responseMessage.SUCCESS, {accessToken})
+            }
+
+            if(refreshToken){
+                // * Fetch token from database
+            const refToken = await databaseService.getRefreshToken(refreshToken)
+                if(refToken){
+                    const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL as string);
+
+                    const {userId} = quicker.verifyToken(refreshToken, config.REFRESH_TOKEN.SECRET as string) as IDecryptedJwt;
+                    // * Access token 
+                    const accessToken = quicker.generateToken(
+                        {
+                            userId: userId 
+                        },
+                        config.ACCESS_TOKEN.SECRET as string,
+                        config.ACCESS_TOKEN.EXPIRY
+                        
+                    ); 
+                    //* Generate new access token
+                    res.cookie('accessToken',accessToken,{
+                        path:'/api/v1',
+                        domain: DOMAIN,
+                        sameSite: 'strict',
+                        maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                        httpOnly: true,
+                        secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+                    })
+                  return httpResponse(req, res, 200, responseMessage.SUCCESS, {accessToken})
+                }
+
+            }
+    httpError(next, new Error(responseMessage.UNAUTHORIZED),req, 401)
         } catch (err) {
             httpError(next, err, req, 500)
         }
