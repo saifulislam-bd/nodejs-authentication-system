@@ -1,41 +1,40 @@
-import mongoose from 'mongoose'
-import config from '../config/config'
-import userModel from '../model/userModel'
-import { IRefreshToken, IUser } from '../types/userType'
-import refreshTokenModel from '../model/refreshTokenModel'
+import mongoose from 'mongoose';
+import config from '../config/config';
+import userModel from '../model/userModel';
+import { IRefreshToken, IUser } from '../types/userType';
+import refreshTokenModel from '../model/refreshTokenModel';
 
 export default {
     connect: async () => {
         try {
-            await mongoose.connect(config.DATABASE_URL as string)
-            return mongoose.connection
+            await mongoose.connect(config.DATABASE_URL as string);
+            return mongoose.connection;
         } catch (err) {
-            throw err
+            throw err;
         }
     },
-    findUserByEmail: (email: string, select:string='')=>{
-        return userModel.findOne({email}).select(select)
+    findUserByEmail: (email: string, select: string = '') => {
+        return userModel.findOne({ email }).select(select);
     },
-    registerUser:(payload:IUser)=>{
-        return userModel.create(payload)
+    registerUser: (payload: IUser) => {
+        return userModel.create(payload);
     },
-    findUserById:(id: string)=>{
-        return userModel.findById(id)
+    findUserById: (id: string) => {
+        return userModel.findById(id);
     },
-    findUserByConfirmationTokenAndCode: (token: string, code: string)=> {
+    findUserByConfirmationTokenAndCode: (token: string, code: string) => {
         return userModel.findOne({
             'accountConfirmation.token': token,
             'accountConfirmation.code': code
-        })
+        });
     },
-    createRefreshToken:(payload:IRefreshToken)=>{
-        return refreshTokenModel.create(payload)
+    createRefreshToken: (payload: IRefreshToken) => {
+        return refreshTokenModel.create(payload);
     },
-    deleteRefreshToken:(token: string)=>{
-        return refreshTokenModel.deleteOne({token})
+    deleteRefreshToken: (token: string) => {
+        return refreshTokenModel.deleteOne({ token });
     },
-    getRefreshToken:(token: string)=>{
-        return refreshTokenModel.findOne({token})
+    getRefreshToken: (token: string) => {
+        return refreshTokenModel.findOne({ token });
     }
-
-}
+};

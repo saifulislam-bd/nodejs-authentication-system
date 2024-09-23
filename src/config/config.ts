@@ -1,6 +1,6 @@
-import dotenvFlow from 'dotenv-flow'
+import dotenvFlow from 'dotenv-flow';
 
-dotenvFlow.config()
+dotenvFlow.config();
 
 export default {
     // General
@@ -12,7 +12,7 @@ export default {
     FRONTEND_URL: process.env.FRONTEND_URL,
 
     // Email service
-    EMAIL_SERVICE_API_KEY:process.env.EMAIL_SERVICE_API_KEY,
+    EMAIL_SERVICE_API_KEY: process.env.EMAIL_SERVICE_API_KEY,
 
     // Database
     DATABASE_URL: process.env.DATABASE_URL,
@@ -20,12 +20,12 @@ export default {
     // Access Token
     ACCESS_TOKEN: {
         SECRET: process.env.ACCESS_TOKEN_SECRET,
-        EXPIRY:3600
+        EXPIRY: 3600
     },
 
     // Refresh Token
     REFRESH_TOKEN: {
         SECRET: process.env.REFRESH_TOKEN_SECRET,
-        EXPIRY:3600 * 24 * 365
-    },
-}
+        EXPIRY: 3600 * 24 * 365
+    }
+};

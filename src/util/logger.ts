@@ -1,51 +1,51 @@
-import util from 'util'
-import 'winston-mongodb'
-import { createLogger, format, transports } from 'winston'
-import { ConsoleTransportInstance, FileTransportInstance } from 'winston/lib/winston/transports'
-import config from '../config/config'
-import { EApplicationEnvironment } from '../constant/application'
-import path from 'path'
-import { red, blue, yellow, green, magenta } from 'colorette'
-import * as sourceMapSupport from 'source-map-support'
-import { MongoDBTransportInstance } from 'winston-mongodb'
+import util from 'util';
+import 'winston-mongodb';
+import { createLogger, format, transports } from 'winston';
+import { ConsoleTransportInstance, FileTransportInstance } from 'winston/lib/winston/transports';
+import config from '../config/config';
+import { EApplicationEnvironment } from '../constant/application';
+import path from 'path';
+import { red, blue, yellow, green, magenta } from 'colorette';
+import * as sourceMapSupport from 'source-map-support';
+import { MongoDBTransportInstance } from 'winston-mongodb';
 
 // Linking Trace Support
-sourceMapSupport.install()
+sourceMapSupport.install();
 
 const colorizeLevel = (level: string) => {
     switch (level) {
         case 'ERROR':
-            return red(level)
+            return red(level);
         case 'INFO':
-            return blue(level)
+            return blue(level);
         case 'WARN':
-            return yellow(level)
+            return yellow(level);
         default:
-            return level
+            return level;
     }
-}
+};
 
 const consoleLogFormat = format.printf((info) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { level, message, timestamp, meta = {} } = info
+     
+    const { level, message, timestamp, meta = {} } = info;
 
-    const customLevel = colorizeLevel(level.toUpperCase())
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const customTimestamp = green(timestamp as string)
+    const customLevel = colorizeLevel(level.toUpperCase());
+     
+    const customTimestamp = green(timestamp as string);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const customMessage = message
+     
+    const customMessage = message;
 
     const customMeta = util.inspect(meta, {
         showHidden: false,
         depth: null,
         colors: true
-    })
+    });
 
-    const customLog = `${customLevel} [${customTimestamp}] ${customMessage}\n${magenta('META')} ${customMeta}\n`
+    const customLog = `${customLevel} [${customTimestamp}] ${customMessage}\n${magenta('META')} ${customMeta}\n`;
 
-    return customLog
-})
+    return customLog;
+});
 
 const consoleTransport = (): Array<ConsoleTransportInstance> => {
     if (config.ENV === EApplicationEnvironment.DEVELOPMENT) {
@@ -54,17 +54,17 @@ const consoleTransport = (): Array<ConsoleTransportInstance> => {
                 level: 'info',
                 format: format.combine(format.timestamp(), consoleLogFormat)
             })
-        ]
+        ];
     }
 
-    return []
-}
+    return [];
+};
 
 const fileLogFormat = format.printf((info) => {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const { level, message, timestamp, meta = {} } = info
+     
+    const { level, message, timestamp, meta = {} } = info;
 
-    const logMeta: Record<string, unknown> = {}
+    const logMeta: Record<string, unknown> = {};
 
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     for (const [key, value] of Object.entries(meta)) {
@@ -73,23 +73,23 @@ const fileLogFormat = format.printf((info) => {
                 name: value.name,
                 message: value.message,
                 trace: value.stack || ''
-            }
+            };
         } else {
-            logMeta[key] = value
+            logMeta[key] = value;
         }
     }
 
     const logData = {
         level: level.toUpperCase(),
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+         
         message,
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+         
         timestamp,
         meta: logMeta
-    }
+    };
 
-    return JSON.stringify(logData, null, 4)
-})
+    return JSON.stringify(logData, null, 4);
+});
 
 const FileTransport = (): Array<FileTransportInstance> => {
     return [
@@ -98,8 +98,8 @@ const FileTransport = (): Array<FileTransportInstance> => {
             level: 'info',
             format: format.combine(format.timestamp(), fileLogFormat)
         })
-    ]
-}
+    ];
+};
 
 const MongodbTransport = (): Array<MongoDBTransportInstance> => {
     return [
@@ -113,12 +113,13 @@ const MongodbTransport = (): Array<MongoDBTransportInstance> => {
             },
             collection: 'application-logs'
         })
-    ]
-}
+    ];
+};
 
 export default createLogger({
     defaultMeta: {
         meta: {}
     },
     transports: [...FileTransport(), ...MongodbTransport(), ...consoleTransport()]
-})
+});
+
