@@ -11,5 +11,7 @@ export default {
     ACCOUNT_ALREADY_CONFIRMED: `Account already confirmed`,
     INVALID_EMAIL_OR_PASSWORD: `Invalid Email or Password`,
     UNAUTHORIZED: `You are not authorized`,
-    ACCOUNT_CONFIRMATION_REQUIRED: 'Account confirmation required'
+    ACCOUNT_CONFIRMATION_REQUIRED: 'Account confirmation required',
+    EXPIRED_URL: `Your password rest url has been expired`,
+    INVALID_REQUEST: `Invalid request`
 };

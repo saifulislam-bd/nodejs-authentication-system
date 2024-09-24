@@ -3,8 +3,22 @@ import httpResponse from '../util/httpResponse';
 import responseMessage from '../constant/responseMessage';
 import httpError from '../util/httpError';
 import quicker from '../util/quicker';
-import { IDecryptedJwt, IForgotPasswordRequestBody, ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType';
-import { validateForgotPasswordBody, validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService';
+import {
+    IDecryptedJwt,
+    IForgotPasswordRequestBody,
+    ILoginRequestBody,
+    IRefreshToken,
+    IRegisterRequestBody,
+    IResetPasswordRequestBody,
+    IUser
+} from '../types/userType';
+import {
+    validateForgotPasswordBody,
+    validateJoiSchema,
+    validateLoginBody,
+    validateRegisterBody,
+    validateResetPasswordBody
+} from '../service/validationService';
 import databaseService from '../service/databaseService';
 import { EUserRole } from '../constant/userConstant';
 import config from '../config/config';
@@ -31,6 +45,12 @@ interface ISelfIdentificationRequest extends Request {
 }
 interface IForgetPasswordRequest extends Request {
     body: IForgotPasswordRequestBody;
+}
+interface IResetPasswordRequest extends Request {
+    body: IResetPasswordRequestBody;
+    params: {
+        token: string;
+    };
 }
 
 export default {
@@ -378,6 +398,68 @@ export default {
                     meta: err
                 });
             });
+            httpResponse(req, res, 200, responseMessage.SUCCESS);
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+    resetPassword: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // TODO:
+            // * Parsing body & validation
+            const { body, params } = req as IResetPasswordRequest;
+            const { token } = params;
+            const { error, value } = validateJoiSchema<IResetPasswordRequestBody>(validateResetPasswordBody, body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+            const { newPassword } = value;
+
+            // * Fetch user by token
+            const user = await databaseService.findUserByResetToken(token);
+            if (!user) {
+                return httpError(next, new Error(responseMessage.NOT_FOUND('user')), req, 404);
+            }
+
+            // * Check if account is confirmed
+            if (!user.accountConfirmation.status) {
+                return httpError(next, new Error(responseMessage.ACCOUNT_CONFIRMATION_REQUIRED), req, 400);
+            }
+
+            // * Check expiry of the URL
+            const storedExpiry = user.passwordReset.expiry;
+            const currentTimestamp = dayjs().valueOf();
+
+            if (!storedExpiry) {
+                return httpError(next, new Error(responseMessage.INVALID_REQUEST), req, 400);
+            }
+
+            if (currentTimestamp > storedExpiry) {
+                return httpError(next, new Error(responseMessage.EXPIRED_URL), req, 400);
+            }
+
+            // * Hash new password
+            const hashedPassword = await quicker.hashPassword(newPassword);
+
+            // * Update user
+            user.password = hashedPassword;
+
+            user.passwordReset.token = null;
+            user.passwordReset.expiry = null;
+            user.passwordReset.lastResetAt = dayjs().utc().toDate();
+            await user.save();
+
+            // * Email sent
+            const to = [user.email];
+            const subject = 'Reset Account Password Successful';
+            const text = `Hey ${user.name}, Your account password has been successfully reset.`;
+
+            emailService.sendEmail(to, subject, text).catch((err) => {
+                logger.error('EMAIL_SERVICE', {
+                    meta: err
+                });
+            });
+
             httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
             httpError(next, err, req, 500);
