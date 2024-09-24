@@ -6,6 +6,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { v4 as uuid } from 'uuid';
 import { randomInt } from 'crypto';
+import dayjs from 'dayjs';
 
 export default {
     getSystemHealth: () => {
@@ -82,5 +83,8 @@ export default {
         } catch (error) {
             throw error;
         }
+    },
+    generateResetPasswordExpiry: (minute: number) => {
+        return dayjs().valueOf() + minute * 60 * 1000;
     }
 };

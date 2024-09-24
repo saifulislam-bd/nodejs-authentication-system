@@ -12,5 +12,6 @@ router.route('/login').post(apiController.login);
 router.route('/self-identification').get(authentication, apiController.selfIdentification);
 router.route('/logout').put(authentication, apiController.logout);
 router.route('/refresh-token').post(apiController.refreshToken);
+router.route('/forgot-password').put(apiController.forgotPassword);
 
 export default router;

@@ -3,8 +3,8 @@ import httpResponse from '../util/httpResponse';
 import responseMessage from '../constant/responseMessage';
 import httpError from '../util/httpError';
 import quicker from '../util/quicker';
-import { IDecryptedJwt, ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType';
-import { validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService';
+import { IDecryptedJwt, IForgotPasswordRequestBody, ILoginRequestBody, IRefreshToken, IRegisterRequestBody, IUser } from '../types/userType';
+import { validateForgotPasswordBody, validateJoiSchema, validateLoginBody, validateRegisterBody } from '../service/validationService';
 import databaseService from '../service/databaseService';
 import { EUserRole } from '../constant/userConstant';
 import config from '../config/config';
@@ -29,6 +29,9 @@ interface IConfirmRequest extends Request {
 interface ISelfIdentificationRequest extends Request {
     authenticatedUser: IUser;
 }
+interface IForgetPasswordRequest extends Request {
+    body: IForgotPasswordRequestBody;
+}
 
 export default {
     self: (req: Request, res: Response, next: NextFunction) => {
@@ -38,7 +41,6 @@ export default {
             httpError(next, err, req, 500);
         }
     },
-
     health: (req: Request, res: Response, next: NextFunction) => {
         try {
             const healthData = {
@@ -52,7 +54,6 @@ export default {
             httpError(next, err, req, 500);
         }
     },
-
     register: async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { body } = req as IRegisterRequest;
@@ -135,7 +136,6 @@ export default {
             httpError(next, err, req, 500);
         }
     },
-
     confirmation: async (req: Request, res: Response, next: NextFunction) => {
         try {
             const { params, query } = req as IConfirmRequest;
@@ -330,6 +330,55 @@ export default {
                 }
             }
             httpError(next, new Error(responseMessage.UNAUTHORIZED), req, 401);
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+    forgotPassword: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // TODO:
+            // * Parsing body
+            const { body } = req as IForgetPasswordRequest;
+
+            // * Validate body
+            const { error, value } = validateJoiSchema<IForgotPasswordRequestBody>(validateForgotPasswordBody, body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+            const { email } = value;
+
+            // * Find user by Email
+            const user = await databaseService.findUserByEmail(email);
+            if (!user) {
+                return httpError(next, new Error(responseMessage.NOT_FOUND('user')), req, 404);
+            }
+
+            // * Check if user account is confirmed
+            if (!user.accountConfirmation.status) {
+                return httpError(next, new Error(responseMessage.ACCOUNT_CONFIRMATION_REQUIRED), req, 400);
+            }
+
+            // * Password reset token & expiry
+            const token = quicker.generateRandomId();
+            const expiry = quicker.generateResetPasswordExpiry(15);
+
+            // * Update user
+            user.passwordReset.token = token;
+            user.passwordReset.expiry = expiry;
+            await user.save();
+
+            // * Email sent
+            const resetUrl = `${config.FRONTEND_URL}/reset-password/${token}`;
+            const to = [email];
+            const subject = 'Reset Your Account Password';
+            const text = `Hey ${user.name}, Please reset your account password by clicking on the link given below.\n\nLink will expire within 15 minutes.\n\n${resetUrl}`;
+
+            emailService.sendEmail(to, subject, text).catch((err) => {
+                logger.error('EMAIL_SERVICE', {
+                    meta: err
+                });
+            });
+            httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
             httpError(next, err, req, 500);
         }

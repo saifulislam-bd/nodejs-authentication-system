@@ -45,3 +45,7 @@ export interface IRefreshToken {
 export interface IDecryptedJwt extends JwtPayload {
     userId: string;
 }
+
+export interface IForgotPasswordRequestBody {
+    email: string;
+}
