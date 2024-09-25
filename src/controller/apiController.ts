@@ -309,7 +309,7 @@ export default {
                 path: '/api/v1',
                 domain: DOMAIN,
                 sameSite: 'strict',
-                maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                maxAge: 1000 * config.REFRESH_TOKEN.EXPIRY,
                 httpOnly: true,
                 secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
             });
@@ -335,25 +335,36 @@ export default {
                 if (refToken) {
                     const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL as string);
 
-                    const { userId } = quicker.verifyToken(refreshToken, config.REFRESH_TOKEN.SECRET as string) as IDecryptedJwt;
-                    // * Access token
-                    const accessToken = quicker.generateToken(
-                        {
-                            userId: userId
-                        },
-                        config.ACCESS_TOKEN.SECRET as string,
-                        config.ACCESS_TOKEN.EXPIRY
-                    );
-                    //* Generate new access token
-                    res.cookie('accessToken', accessToken, {
-                        path: '/api/v1',
-                        domain: DOMAIN,
-                        sameSite: 'strict',
-                        maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
-                        httpOnly: true,
-                        secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
-                    });
-                    return httpResponse(req, res, 200, responseMessage.SUCCESS, { accessToken });
+                    let userId: null | string = null;
+
+                    try {
+                        const decryptedJwt = quicker.verifyToken(refreshToken, config.REFRESH_TOKEN.SECRET as string) as IDecryptedJwt;
+                        userId = decryptedJwt.userId;
+                        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    } catch (error) {
+                        userId = null;
+                    }
+
+                    if (userId) {
+                        // * Access token
+                        const accessToken = quicker.generateToken(
+                            {
+                                userId: userId
+                            },
+                            config.ACCESS_TOKEN.SECRET as string,
+                            config.ACCESS_TOKEN.EXPIRY
+                        );
+                        //* Generate new access token
+                        res.cookie('accessToken', accessToken, {
+                            path: '/api/v1',
+                            domain: DOMAIN,
+                            sameSite: 'strict',
+                            maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                            httpOnly: true,
+                            secure: !(config.ENV === EApplicationEnvironment.DEVELOPMENT)
+                        });
+                        return httpResponse(req, res, 200, responseMessage.SUCCESS, { accessToken });
+                    }
                 }
             }
             httpError(next, new Error(responseMessage.UNAUTHORIZED), req, 401);
