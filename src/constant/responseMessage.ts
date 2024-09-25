@@ -13,5 +13,7 @@ export default {
     UNAUTHORIZED: `You are not authorized`,
     ACCOUNT_CONFIRMATION_REQUIRED: 'Account confirmation required',
     EXPIRED_URL: `Your password rest url has been expired`,
-    INVALID_REQUEST: `Invalid request`
+    INVALID_REQUEST: `Invalid request`,
+    INVALID_OLD_PASSWORD: `Invalid old password`,
+    PASSWORD_MATCHED_WITH_OLD_PASSWORD: `Password matched with old password`
 };

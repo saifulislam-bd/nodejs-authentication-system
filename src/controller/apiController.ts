@@ -4,15 +4,18 @@ import responseMessage from '../constant/responseMessage';
 import httpError from '../util/httpError';
 import quicker from '../util/quicker';
 import {
+    IChangePasswordRequestBody,
     IDecryptedJwt,
     IForgotPasswordRequestBody,
     ILoginRequestBody,
     IRefreshToken,
     IRegisterRequestBody,
     IResetPasswordRequestBody,
-    IUser
+    IUser,
+    IUserWithId
 } from '../types/userType';
 import {
+    validateChangePasswordBody,
     validateForgotPasswordBody,
     validateJoiSchema,
     validateLoginBody,
@@ -51,6 +54,10 @@ interface IResetPasswordRequest extends Request {
     params: {
         token: string;
     };
+}
+interface IChangePasswordRequest extends Request {
+    authenticatedUser: IUserWithId;
+    body: IChangePasswordRequestBody;
 }
 
 export default {
@@ -460,6 +467,58 @@ export default {
                 });
             });
 
+            httpResponse(req, res, 200, responseMessage.SUCCESS);
+        } catch (err) {
+            httpError(next, err, req, 500);
+        }
+    },
+    changePassword: async (req: Request, res: Response, next: NextFunction) => {
+        try {
+            // TODO :
+            // * Parsing body & validation
+            const { body, authenticatedUser } = req as IChangePasswordRequest;
+
+            const { error, value } = validateJoiSchema<IChangePasswordRequestBody>(validateChangePasswordBody, body);
+            if (error) {
+                return httpError(next, error, req, 422);
+            }
+
+            // * Find user by id
+            const user = await databaseService.findUserById(authenticatedUser._id, '+password');
+            if (!user) {
+                return httpError(next, new Error(responseMessage.NOT_FOUND('user')), req, 404);
+            }
+            const { oldPassword, newPassword } = value;
+
+            // * Check if old password is matched with new password
+            const isMatchedPassword = await quicker.comparePassword(oldPassword, user.password);
+
+            if (!isMatchedPassword) {
+                return httpError(next, new Error(responseMessage.INVALID_OLD_PASSWORD), req, 400);
+            }
+
+            if (oldPassword === newPassword) {
+                return httpError(next, new Error(responseMessage.PASSWORD_MATCHED_WITH_OLD_PASSWORD), req, 400);
+            }
+
+            // * Hash new password
+            const hashedPassword = await quicker.hashPassword(newPassword);
+
+            // * Update user
+            user.password = hashedPassword;
+            await user.save();
+
+            // * Email sent
+
+            const to = [user.email];
+            const subject = 'Change Password Successful';
+            const text = `Hey ${user.name}, Your account password has been successfully changed.`;
+
+            emailService.sendEmail(to, subject, text).catch((err) => {
+                logger.error('EMAIL_SERVICE', {
+                    meta: err
+                });
+            });
             httpResponse(req, res, 200, responseMessage.SUCCESS);
         } catch (err) {
             httpError(next, err, req, 500);
