@@ -37,7 +37,7 @@
     "joi": "^17.13.3",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.11.8",
-    "mongoose": "^8.6.2",
+    "mongoose": "^8.24.7",
     "rate-limiter-flexible": "^5.0.3",
     "resend": "^4.0.0",
     "source-map-support": "^0.5.21",
